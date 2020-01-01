@@ -1,7 +1,8 @@
 #include "ProcessMemoryMapWidget.h"
+#include <LibCore/CFile.h>
 #include <LibCore/CTimer.h>
 #include <LibGUI/GBoxLayout.h>
-#include <LibGUI/GJsonArrayModel.h>
+
 #include <LibGUI/GSortingProxyModel.h>
 #include <LibGUI/GTableView.h>
 
@@ -44,6 +45,7 @@ ProcessMemoryMapWidget::ProcessMemoryMapWidget(GWidget* parent)
     });
     pid_vm_fields.empend("cow_pages", "# CoW", TextAlignment::CenterRight);
     pid_vm_fields.empend("name", "Name", TextAlignment::CenterLeft);
+
     m_json_model = GJsonArrayModel::create({}, move(pid_vm_fields));
     m_table_view->set_model(GSortingProxyModel::create(*m_json_model));
     m_table_view->model()->set_key_column_and_sort_order(0, GSortOrder::Ascending);
@@ -59,11 +61,27 @@ void ProcessMemoryMapWidget::set_pid(pid_t pid)
     if (m_pid == pid)
         return;
     m_pid = pid;
-    m_json_model->set_json_path(String::format("/proc/%d/vm", pid));
+
+    auto vm_path = String::format("/proc/%d/vm", pid);
+    auto file = CFile::construct(vm_path);
+    if (!file->open(CIODevice::ReadOnly)) {
+        if (!m_refresh_failed) {
+            //m_table_view->set_model(GSortingProxyModel::create(*m_json_model));
+            //m_json_model->set_json_path("/dev/null"); // "/dev/null", "/dev/zero"
+            refresh();
+            m_refresh_failed = true;
+        }
+        return;
+    } else if (m_refresh_failed) {
+        m_refresh_failed = false;
+    }
+    m_json_model->set_json_path(vm_path);
 }
 
 void ProcessMemoryMapWidget::refresh()
 {
-    if (m_pid != -1)
+    if (m_pid != -1) {
+        //dbg() << "ProcessMemoryMapWidget::refresh()";
         m_json_model->update();
+    }
 }

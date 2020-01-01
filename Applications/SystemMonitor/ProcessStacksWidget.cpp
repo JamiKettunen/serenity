@@ -28,11 +28,19 @@ void ProcessStacksWidget::set_pid(pid_t pid)
 
 void ProcessStacksWidget::refresh()
 {
-    auto file = CFile::construct(String::format("/proc/%d/stack", m_pid));
-    if (!file->open(CIODevice::ReadOnly)) {
-        m_stacks_editor->set_text(String::format("Unable to open %s", file->filename().characters()));
-        return;
-    }
+    if (m_pid != -1) {
+        //dbg() << "ProcessStacksWidget::refresh()";
+        auto file = CFile::construct(String::format("/proc/%d/stack", m_pid));
+        if (!file->open(CIODevice::ReadOnly)) {
+            if (!m_refresh_failed) {
+                m_stacks_editor->set_text(String::format("Unable to open %s", file->filename().characters()));
+                m_refresh_failed = true;
+            }
+            return;
+        } else if (m_refresh_failed) {
+            m_refresh_failed = false;
+        }
 
-    m_stacks_editor->set_text(file->read_all());
+        m_stacks_editor->set_text(file->read_all());
+    }
 }

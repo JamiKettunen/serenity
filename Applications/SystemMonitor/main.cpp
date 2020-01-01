@@ -46,6 +46,12 @@ static RefPtr<GWidget> build_pci_devices_tab();
 static RefPtr<GWidget> build_devices_tab();
 static NonnullRefPtr<GWidget> build_graphs_tab();
 
+/*void update_timer_refresh_intervals(int new_interval)
+{
+    // TODO: How do we update all of the timer from here? perhaps make them (3 widgets + refresh_timer) "private" and access here?
+    refresh_timer->restart(250);
+}*/
+
 int main(int argc, char** argv)
 {
     GApplication app(argc, argv);

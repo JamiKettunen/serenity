@@ -15,6 +15,7 @@ public:
     void refresh();
 
 private:
+    bool m_refresh_failed = false;
     pid_t m_pid { -1 };
     RefPtr<GTextEditor> m_stacks_editor;
     RefPtr<CTimer> m_timer;
