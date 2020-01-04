@@ -25,15 +25,19 @@ int main(int argc, char** argv)
     auto menubar = make<GMenuBar>();
 
     auto app_menu = GMenu::construct("Snake");
-
     app_menu->add_action(GAction::create("New game", { Mod_None, Key_F2 }, [&](const GAction&) {
         game->reset();
     }));
     app_menu->add_action(GCommonActions::make_quit_action([](auto&) {
         GApplication::the().quit(0);
     }));
-
     menubar->add_menu(move(app_menu));
+
+    auto view_menu = GMenu::construct("View");
+    view_menu->add_action(GAction::create("Go fullscreen", { Mod_None, Key_F11 }, [&](const GAction&) {
+        window->set_fullscreen(!window->is_fullscreen());
+    }));
+    menubar->add_menu(move(view_menu));
 
     auto help_menu = GMenu::construct("Help");
     help_menu->add_action(GAction::create("About", [&](const GAction&) {
