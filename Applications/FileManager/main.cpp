@@ -128,6 +128,15 @@ int main(int argc, char** argv)
         directory_view->open_parent_directory();
     });
 
+    auto new_window_action = GAction::create("New window", { Mod_Ctrl, Key_N }, [&](const GAction&) {
+        if (fork() == 0) {
+            int rc = execl("/bin/FileManager", "FileManager", directory_view->path().characters(), nullptr);
+            if (rc < 0)
+                perror("execl");
+            exit(1);
+        }
+    });
+
     auto mkdir_action = GAction::create("New directory...", { Mod_Ctrl | Mod_Shift, Key_N }, GraphicsBitmap::load_from_file("/res/icons/16x16/mkdir.png"), [&](const GAction&) {
         auto input_box = GInputBox::construct("Enter name:", "New directory", window);
         if (input_box->exec() == GInputBox::ExecOK && !input_box->text_value().is_empty()) {
@@ -361,7 +370,9 @@ int main(int argc, char** argv)
     auto menubar = make<GMenuBar>();
 
     auto app_menu = GMenu::construct("File Manager");
+    app_menu->add_action(new_window_action);
     app_menu->add_action(mkdir_action);
+    app_menu->add_separator();
     app_menu->add_action(copy_action);
     app_menu->add_action(paste_action);
     app_menu->add_action(delete_action);
