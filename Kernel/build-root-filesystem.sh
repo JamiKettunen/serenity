@@ -137,6 +137,7 @@ cp ../DevTools/Inspector/Inspector mnt/bin/Inspector
 cp ../DevTools/ProfileViewer/ProfileViewer mnt/bin/ProfileViewer
 cp ../Games/Minesweeper/Minesweeper mnt/bin/Minesweeper
 cp ../Games/Snake/Snake mnt/bin/Snake
+cp ../Games/Blocks/Blocks mnt/bin/Blocks
 cp ../Servers/LookupServer/LookupServer mnt/bin/LookupServer
 cp ../Servers/SystemServer/SystemServer mnt/bin/SystemServer
 cp ../Servers/WindowServer/WindowServer mnt/bin/WindowServer
