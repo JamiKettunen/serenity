@@ -22,10 +22,10 @@ private:
     virtual void keydown_event(GKeyEvent&) override;
     virtual void timer_event(CTimerEvent&) override;
 
-    void game_over();
-    void generate_block();
-    void update_block();
-    void move_block(int dx, int dy);
+    enum class RotationDir {
+        Clockwise = 0,
+        Counterclockwise,
+    };
 
     struct Block {
         int x { 0 };
@@ -36,6 +36,13 @@ private:
         // Contains the current block including the rotation
         Vector<char, 16> chars = { };
     };
+
+    void game_over();
+    void generate_block();
+    void update_block();
+    void move_block(int dx, int dy);
+    void rotate_block(RotationDir dir);
+
 
     //Rect cell_rect(const Coordinate&) const;
     Rect score_rect() const;

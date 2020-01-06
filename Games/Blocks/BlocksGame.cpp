@@ -92,6 +92,53 @@ void BlocksGame::move_block(int dx, int dy)
     // Loop block around horizontally & vertically
     if (m_block.y + 1 > rows)
         m_block.y = 0;
+
+    update();
+}
+
+void BlocksGame::rotate_block(RotationDir dir)
+{
+    dbg() << "BlocksGame::rotate_block(" << (int)dir << ")";
+
+    int char_index;
+    Vector<char, 16> rotated_chars;
+
+    if (dir == RotationDir::Clockwise) {
+        // 0  1  2  3
+        // 4  5  6  7
+        // 8  9  10 11
+        // 12 13 14 15
+        // =>
+        // 12 8  4  0
+        // 13 9  5  1
+        // 14 10 6  2
+        // 15 11 7  3
+        for (int x = 0; x < c_area_tiles; x++) {
+            for (int y = c_area_tiles - 1; y > -1; y--) {
+                char_index = (y * c_area_tiles) + x;
+                rotated_chars.append(m_block.chars[char_index]);
+            }
+        }
+    } else {
+        // 0  1  2  3
+        // 4  5  6  7
+        // 8  9  10 11
+        // 12 13 14 15
+        // =>
+        // 3  7  11 15
+        // 2  6  10 14
+        // 1  5  9  13
+        // 0  4  8  12
+        for (int x = c_area_tiles - 1; x > -1; x--) {
+            for (int y = 0; y < c_area_tiles; y++) {
+                char_index = (y * c_area_tiles) + x;
+                rotated_chars.append(m_block.chars[char_index]);
+            }
+        }
+    }
+
+    m_block.chars = rotated_chars;
+    update();
 }
 
 void BlocksGame::timer_event(CTimerEvent&)
@@ -107,28 +154,40 @@ void BlocksGame::keydown_event(GKeyEvent& event)
 {
     //dbg() << "BlocksGame::keydown_event(" << event.key() << ")";
 
-    switch (event.key()) {
-    case KeyCode::Key_A:
-    case KeyCode::Key_Left:
-        move_block(-1, 0);
-        update();
-        break;
-    case KeyCode::Key_D:
-    case KeyCode::Key_Right:
-        move_block(1, 0);
-        update();
-        break;
-    case KeyCode::Key_W:
-    case KeyCode::Key_Up:
-        // TODO: Put block on hold?
-        break;
-    case KeyCode::Key_S:
-    case KeyCode::Key_Down:
-        move_block(0, 1);
-        update();
-        break;
-    default:
-        break;
+    // TODO: Perhaps use Z & X for block rotation instead?
+
+    if (event.modifiers() == Mod_None) {
+        switch (event.key()) {
+        case Key_A:
+        case Key_Left:
+            move_block(-1, 0);
+            break;
+        case Key_D:
+        case Key_Right:
+            move_block(1, 0);
+            break;
+        case Key_W:
+        case Key_Up:
+            // TODO: Put block on hold?
+            break;
+        case Key_S:
+        case Key_Down:
+            move_block(0, 1);
+            break;
+        case Key_R:
+            rotate_block(RotationDir::Clockwise);
+            break;
+        default:
+            break;
+        }
+    } else if (event.modifiers() == Mod_Shift) {
+        switch (event.key()) {
+        case Key_R:
+            rotate_block(RotationDir::Counterclockwise);
+            break;
+        default:
+            break;
+        }
     }
 }
 
