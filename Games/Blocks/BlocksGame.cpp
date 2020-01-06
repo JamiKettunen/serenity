@@ -62,9 +62,14 @@ void BlocksGame::reset()
 
 void BlocksGame::generate_block()
 {
-    dbg() << "BlocksGame::generate_block()";
+    m_block.type = (rand() % m_all_blocks.size()); // 1 +
+    dbg() << "BlocksGame::generate_block() >> New block is " << (m_block.type + 1);
+    m_block.chars = m_all_blocks[m_block.type];
 
-    m_block_type = 1 + (rand() % m_all_blocks.size());
+    m_block.rotation = 0;
+    m_block.x = (columns / 2) - 2;
+    m_block.y = 0;
+
     update_block();
 }
 
@@ -75,33 +80,43 @@ void BlocksGame::update_block()
     update();
 }
 
-void BlocksGame::move_block_down()
+void BlocksGame::move_block(int dx, int dy)
 {
-    dbg() << "BlocksGame::move_block_down()";
+    //dbg() << "BlocksGame::move_block(" << dx << ", " << dy << ")";
 
-    // TODO: Move the block down by 1
+    if (dx != 0)
+        m_block.x += dx;
+    if (dy != 0)
+        m_block.y += dy;
 
+    // Loop block around horizontally & vertically
+    if (m_block.y + 1 > rows)
+        m_block.y = 0;
 }
 
 void BlocksGame::timer_event(CTimerEvent&)
 {
-    dbg() << "BlocksGame::timer_event()";
+    //dbg() << "BlocksGame::timer_event()";
 
+    // TODO: Don't move block down if so was done in last 1s
+    move_block(0, 1);
     update();
 }
 
 void BlocksGame::keydown_event(GKeyEvent& event)
 {
-    dbg() << "BlocksGame::keydown_event(" << event.key() << ")";
+    //dbg() << "BlocksGame::keydown_event(" << event.key() << ")";
 
     switch (event.key()) {
     case KeyCode::Key_A:
     case KeyCode::Key_Left:
-        //move_block(-1, 0);
+        move_block(-1, 0);
+        update();
         break;
     case KeyCode::Key_D:
     case KeyCode::Key_Right:
-        //move_block(1, 0);
+        move_block(1, 0);
+        update();
         break;
     case KeyCode::Key_W:
     case KeyCode::Key_Up:
@@ -109,7 +124,8 @@ void BlocksGame::keydown_event(GKeyEvent& event)
         break;
     case KeyCode::Key_S:
     case KeyCode::Key_Down:
-        //move_block(0, 1);
+        move_block(0, 1);
+        update();
         break;
     default:
         break;
@@ -118,7 +134,7 @@ void BlocksGame::keydown_event(GKeyEvent& event)
 
 void BlocksGame::paint_event(GPaintEvent& event)
 {
-    dbg() << "BlocksGame::paint_event()";
+    //dbg() << "BlocksGame::paint_event()";
 
     GPainter painter(*this);
     Rect main_rect(event.rect());
@@ -127,7 +143,8 @@ void BlocksGame::paint_event(GPaintEvent& event)
 
     // Background + white border
     painter.fill_rect(main_rect, Color::from_rgb(0xEBEBEB)); // 235, 235, 235
-    painter.fill_rect(inner_rect, Color::from_rgb(0x0C0C0C)); // 16, 16, 16
+    painter.fill_rect(inner_rect, Color::from_rgb(0x181818)); // 24, 24, 24
+    //painter.fill_rect(main_rect, Color::from_rgb(0x181818)); // 24, 24, 24
 
     // Horizontal & vertical lines
     int width = columns * tile_size;
@@ -141,11 +158,23 @@ void BlocksGame::paint_event(GPaintEvent& event)
         painter.fill_rect(horizontal_line_rect, Color::from_rgb(0xEBEBEB)); // 235, 235, 235
     }
 
-    // Draw all blocks for testing!
-    for (int t = 0; t < m_block_colors.size(); t++) {
-        int x = t * tile_size;
-        Rect tile_rect(x, 0, tile_size, tile_size);
-        painter.draw_scaled_bitmap(tile_rect, m_block_bitmaps[t], m_block_bitmaps[t].rect());
+    // Draw blocks
+    int block_x = m_block.x * tile_size;
+    int block_y = m_block.y * tile_size;
+
+    // Draw current dropping piece
+    int area_size = tile_size * c_area_tiles;
+    Rect block_area_rect(block_x, block_y, area_size, area_size);
+
+    for (int y = 0; y < c_area_tiles; y++) {
+        for (int x = 0; x < c_area_tiles; x++) {
+            int char_index = (y * c_area_tiles) + x;
+            bool should_draw = (m_block.chars[char_index] != '\0');
+            if (should_draw) {
+                Rect tile_rect(block_area_rect.x() + x * tile_size, block_area_rect.y() + y * tile_size, tile_size, tile_size);
+                painter.draw_scaled_bitmap(tile_rect, m_block_bitmaps[m_block.type], m_block_bitmaps[m_block.type].rect());
+            }
+        }
     }
 }
 
