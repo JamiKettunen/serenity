@@ -27,11 +27,19 @@ private:
         Counterclockwise,
     };
 
+    struct Margin {
+        int left { 0 };
+        int right { 0 };
+        int top { 0 };
+        int bottom { 0 };
+    };
+
     struct Block {
         int x { 0 };
         int y { 0 };
         int type { 0 };
         int rotation { 0 };
+        Margin margin;
 
         // Contains the current block including the rotation
         Vector<char, 16> chars = { };
@@ -39,20 +47,23 @@ private:
 
     void game_over();
     void generate_block();
-    void update_block();
+    void do_inbounds_checks();
+    void update_block_margins(bool update_top);
+    //Margin can_move_block(int dx, int dy);
     void move_block(int dx, int dy);
     void rotate_block(RotationDir dir);
 
-
-    //Rect cell_rect(const Coordinate&) const;
-    Rect score_rect() const;
-    Rect high_score_rect() const;
+    //Rect score_rect() const;
+    //Rect high_score_rect() const;
 
     // Score
     unsigned m_score { 0 };
     String m_score_text;
-    unsigned m_high_score { 0 };
-    String m_high_score_text;
+    //unsigned m_high_score { 0 };
+    //String m_high_score_text;
+
+    // DEBUG
+    bool stop = false;
 
     // Block bitmaps
     void generate_block_bitmaps();
@@ -96,15 +107,15 @@ private:
             '\0', '1',  '\0', '\0',
         },
         Vector<char, 16> { /* 1: O */
-            '\0', '2',  '2',  '\0',
-            '\0', '2',  '2',  '\0',
             '\0', '\0', '\0', '\0',
+            '\0', '2',  '2',  '\0',
+            '\0', '2',  '2',  '\0',
             '\0', '\0', '\0', '\0',
         },
         Vector<char, 16> { /* 2: T */
+            '\0', '\0', '\0', '\0',
             '\0', '3',  '\0', '\0',
             '3',  '3',  '3',  '\0',
-            '\0', '\0', '\0', '\0',
             '\0', '\0', '\0', '\0',
         },
         Vector<char, 16> { /* 3: L */
@@ -120,15 +131,15 @@ private:
             '\0', '\0', '\0', '\0',
         },
         Vector<char, 16> { /* 5: Z */
+            '\0', '\0', '\0', '\0',
             '6',  '6',  '\0', '\0',
             '\0', '6',  '6',  '\0',
             '\0', '\0', '\0', '\0',
-            '\0', '\0', '\0', '\0',
         },
         Vector<char, 16> { /* 6: S */
+            '\0', '\0', '\0', '\0',
             '\0', '7',  '7',  '\0',
             '7',  '7',  '\0', '\0',
-            '\0', '\0', '\0', '\0',
             '\0', '\0', '\0', '\0',
         },
     };

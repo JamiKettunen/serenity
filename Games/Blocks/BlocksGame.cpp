@@ -7,14 +7,14 @@
 BlocksGame::BlocksGame(GWidget* parent)
     : GWidget(parent)
 {
-    dbg() << "BlocksGame::init()";
+    //dbg() << "BlocksGame::init()";
 
-    set_font(GFontDatabase::the().get_by_name("Liza Regular"));
     srand(time(nullptr));
+    //set_font(GFontDatabase::the().get_by_name("Liza Regular"));
 
     // TODO: Implement saving highscore to FS
-    m_high_score = 0;
-    m_high_score_text = "Best: 0";
+    //m_high_score = 0;
+    //m_high_score_text = "Best: 0";
 
     generate_block_bitmaps();
     reset();
@@ -25,7 +25,7 @@ BlocksGame::~BlocksGame()
 }
 
 void BlocksGame::generate_block_bitmaps() {
-    dbg() << "BlocksGame::generate_block_bitmaps()";
+    //dbg() << "BlocksGame::generate_block_bitmaps()";
 
     Rect block_rect(0, 0, tile_size, tile_size);
     Rect left_side(0, 0, 2, block_rect.height());
@@ -51,11 +51,24 @@ void BlocksGame::generate_block_bitmaps() {
 
 void BlocksGame::reset()
 {
-    dbg() << "BlocksGame::reset()";
+    //dbg() << "BlocksGame::reset()";
+
+    m_field.clear();
+    Vector<char> column;
+    for (int x = 0; x < columns; x++)
+        column.append('\0');
+    for (int y = 0; y < rows; y++) // - 1
+        m_field.append(column);
+    //m_field[m_field.size() - 1][0] = '1';
 
     m_score = 0;
     m_score_text = "Score: 0";
-    stop_timer();
+    // DEBUG
+    if (stop)
+        stop = false;
+    else
+    // END DEBUG
+        stop_timer();
     start_timer(1000); // TODO: Change as difficulty increases
     generate_block();
 }
@@ -63,22 +76,86 @@ void BlocksGame::reset()
 void BlocksGame::generate_block()
 {
     m_block.type = (rand() % m_all_blocks.size()); // 1 +
-    dbg() << "BlocksGame::generate_block() >> New block is " << (m_block.type + 1);
+    //dbg() << "BlocksGame::generate_block() >> New block is " << (m_block.type + 1);
     m_block.chars = m_all_blocks[m_block.type];
 
     m_block.rotation = 0;
     m_block.x = (columns / 2) - 2;
     m_block.y = 0;
 
-    update_block();
+    update_block_margins(true);
 }
 
-void BlocksGame::update_block()
+void BlocksGame::do_inbounds_checks()
 {
-    dbg() << "BlocksGame::update_block()";
+    if (m_block.x < 0 && m_block.x + m_block.margin.left < 0) {
+        m_block.x = -m_block.margin.left;
+        //int x_offset = -(m_block.x + m_block.margin.left);
+        //dbg() << "LEFT: " << x_offset;
+    }
+    else if (m_block.x + c_area_tiles > columns && m_block.x + c_area_tiles - m_block.margin.right > columns) {
+        //int x_offset = columns - (m_block.x + c_area_tiles - m_block.margin.right);
+        //dbg() << "RIGHT: " << x_offset;
+        m_block.x = columns - c_area_tiles + m_block.margin.right;
+        // TODO: resist...
+    }
+    else if (m_block.y + c_area_tiles > rows && m_block.y + c_area_tiles - m_block.margin.bottom > rows) {
+        dbg() << "DOWN";
+
+        // DEBUG
+        m_block.y = 0;
+        update_block_margins(true);
+        // END DEBUG
+    }
+
+    //dbg() << "x: " << m_block.x << ", y: " << m_block.y;
 
     update();
 }
+
+void BlocksGame::update_block_margins(bool update_top = false)
+{
+    dbg() << "BlocksGame::update_block_margins(" << update_top << ")";
+
+    // Update margins for each side of the piece
+    int i, margin_left = c_area_tiles - 1, margin_top = c_area_tiles - 1, margin_right = 0, margin_bottom = 0;
+    char c;
+    for (int y = 0; y < c_area_tiles; y++) {
+        for (int x = 0; x < c_area_tiles; x++) {
+            i = (y * c_area_tiles) + x;
+            c = m_block.chars[i];
+            if (c != '\0') {
+                if (x < margin_left)
+                    margin_left = x;
+                else if (x > margin_right)
+                    margin_right = x;
+                if (y < margin_top)
+                    margin_top = y;
+                else if (y > margin_bottom)
+                    margin_bottom = y;
+            }
+        }
+    }
+    // Convert 0-based indexes starting from the top/left to bottom/right margins
+    margin_right = c_area_tiles - margin_right - 1;
+    margin_bottom = c_area_tiles - margin_bottom - 1;
+
+    m_block.margin.left = margin_left;
+    m_block.margin.top = margin_top;
+    m_block.margin.right = margin_right;
+    m_block.margin.bottom = margin_bottom;
+
+    if (update_top && m_block.y == 0 && margin_top != 0)
+        m_block.y = -margin_top;
+
+    do_inbounds_checks();
+}
+
+
+/*bool BlocksGame::can_move_block(int dx, int dy)
+{
+
+}*/
 
 void BlocksGame::move_block(int dx, int dy)
 {
@@ -90,29 +167,29 @@ void BlocksGame::move_block(int dx, int dy)
         m_block.y += dy;
 
     // Loop block around horizontally & vertically
-    if (m_block.y + 1 > rows)
-        m_block.y = 0;
+    /*if (m_block.y + 1 > rows)
+        m_block.y = 0;*/
 
-    update();
+    do_inbounds_checks();
 }
 
 void BlocksGame::rotate_block(RotationDir dir)
 {
-    dbg() << "BlocksGame::rotate_block(" << (int)dir << ")";
+    //dbg() << "BlocksGame::rotate_block(" << (int)dir << ")";
 
     int char_index;
     Vector<char, 16> rotated_chars;
 
     if (dir == RotationDir::Clockwise) {
-        // 0  1  2  3
-        // 4  5  6  7
-        // 8  9  10 11
+        //  0  1  2  3
+        //  4  5  6  7
+        //  8  9 10 11
         // 12 13 14 15
         // =>
-        // 12 8  4  0
-        // 13 9  5  1
-        // 14 10 6  2
-        // 15 11 7  3
+        // 12  8  4  0
+        // 13  9  5  1
+        // 14 10  6  2
+        // 15 11  7  3
         for (int x = 0; x < c_area_tiles; x++) {
             for (int y = c_area_tiles - 1; y > -1; y--) {
                 char_index = (y * c_area_tiles) + x;
@@ -120,15 +197,15 @@ void BlocksGame::rotate_block(RotationDir dir)
             }
         }
     } else {
-        // 0  1  2  3
-        // 4  5  6  7
-        // 8  9  10 11
+        //  0  1  2  3
+        //  4  5  6  7
+        //  8  9 10 11
         // 12 13 14 15
         // =>
-        // 3  7  11 15
-        // 2  6  10 14
-        // 1  5  9  13
-        // 0  4  8  12
+        //  3  7 11 15
+        //  2  6 10 14
+        //  1  5  9 13
+        //  0  4  8 12
         for (int x = c_area_tiles - 1; x > -1; x--) {
             for (int y = 0; y < c_area_tiles; y++) {
                 char_index = (y * c_area_tiles) + x;
@@ -137,8 +214,10 @@ void BlocksGame::rotate_block(RotationDir dir)
         }
     }
 
+    // TODO: Check if rotation is valid using the temporary rotated_chars array
+
     m_block.chars = rotated_chars;
-    update();
+    update_block_margins();
 }
 
 void BlocksGame::timer_event(CTimerEvent&)
@@ -177,6 +256,14 @@ void BlocksGame::keydown_event(GKeyEvent& event)
         case Key_R:
             rotate_block(RotationDir::Clockwise);
             break;
+        case Key_Space:
+            // DEBUG
+            stop = !stop;
+            if (stop)
+                stop_timer();
+            else
+                start_timer(1000);
+            // END DEBUG
         default:
             break;
         }
@@ -217,13 +304,25 @@ void BlocksGame::paint_event(GPaintEvent& event)
         painter.fill_rect(horizontal_line_rect, Color::from_rgb(0xEBEBEB)); // 235, 235, 235
     }
 
-    // Draw blocks
+    // TODO: Draw blocks in the field
+    //int i;
+    char c;
+    for (int y = 0; y < rows; y++) {
+        for (int x = 0; x < columns; x++) {
+            c = m_field[x][y];
+            if (c != '\0') {
+                dbg() << "";
+            }
+        }
+    }
+
+    // Draw current dropping piece
     int block_x = m_block.x * tile_size;
     int block_y = m_block.y * tile_size;
 
-    // Draw current dropping piece
     int area_size = tile_size * c_area_tiles;
     Rect block_area_rect(block_x, block_y, area_size, area_size);
+    painter.draw_rect(block_area_rect, m_block_colors[m_block.type], true);
 
     for (int y = 0; y < c_area_tiles; y++) {
         for (int x = 0; x < c_area_tiles; x++) {
